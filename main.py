@@ -78,6 +78,10 @@ def addToFriendGroup():
 def follow():
     return render_template("sendfollow.html")
 
+@app.route("/A_DFollow", methods=["GET"])
+def A_Dfollow():
+    return render_template("A_DFollow.html")
+
 #---------------------------------------------------
 #LOGIN INFO
 @app.route("/loginAuth", methods=["POST"])
@@ -189,22 +193,60 @@ def addTofriendGroup():
 def sendFollow():
     if request.form:
         requestData = request.form
-        username_followed = requestData["person"]
-        username_follower = session["username"]
+        followed = requestData["person"]
+        follower = session["username"]
         try:
             with connection.cursor() as cursor:
                 query = "SELECT * FROM Follow WHERE username_followed=%s AND username_follower=%s"
-                cursor.execute(query, (username_follower, username_followed))
+                cursor.execute(query, (follower, followed))
                 followExist = cursor.fetchall()
                 if followExist:
-                    error = "There is already an existing follow request from %s." % (username_followed)
-                    return render_template("follow.html", error=error)
-                query = "INSERT INTO Follow (username_followed, username_follower, followstatus) VALUES (%s, %s, 0)"
-                cursor.execute(query, (username_followed, username_follower))
+                    message = "There is an active request for %s" % (followed)
+                    return render_template("follow.html", message=message)
+                checkifAccount = "SELECT * FROM person WHERE username=%s"
+                cursor.execute(checkifAccount, (followed))
+                checkifAccount = cursor.fetchone()
+                if checkifAccount:
+                    query = "INSERT INTO Follow (username_followed, username_follower, followstatus) VALUES (%s, %s, 0)"
+                    cursor.execute(query, (followed, follower))
+                else:
+                    message = "%s does not exist" % (followed)
+                    return render_template("follow.html", message=message)
         except pymysql.err.IntegrityError:
-            error = "%s does not exist." % (username_followed)
-            return render_template("follow.html", error=error)
+            message = "%s does not exist." % (followed)
+            return render_template("follow.html", message=message)
         return redirect(url_for("home"))
+
+#This method proccesses the form and validates any query for sending a follow request
+@app.route("/A_DFollow", methods=["POST"])
+@login_required
+def A_DFollow():
+    if request.form:
+        requestData = request.form
+        followed = requestData["person"]
+        follower = session["username"]
+        try:
+            with connection.cursor() as cursor:
+                query = "SELECT * FROM Follow WHERE username_followed=%s AND username_follower=%s"
+                cursor.execute(query, (follower, followed))
+                followExist = cursor.fetchall()
+                if followExist:
+                    message = "There is an active request for %s" % (followed)
+                    return render_template("follow.html", message=message)
+                checkifAccount = "SELECT * FROM person WHERE username=%s"
+                cursor.execute(checkifAccount, (followed))
+                checkifAccount = cursor.fetchone()
+                if checkifAccount:
+                    query = "INSERT INTO Follow (username_followed, username_follower, followstatus) VALUES (%s, %s, 0)"
+                    cursor.execute(query, (followed, follower))
+                else:
+                    message = "%s does not exist" % (followed)
+                    return render_template("follow.html", message=message)
+        except pymysql.err.IntegrityError:
+            message = "%s does not exist." % (followed)
+            return render_template("follow.html", message=message)
+        return redirect(url_for("home"))
+
 
 #------------------------------------------------
 #UPLOADING IMAGES

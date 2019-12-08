@@ -80,6 +80,9 @@ def follow():
 
 @app.route("/A_DFollow", methods=["GET"])
 def A_Dfollow():
+    user = session["username"]
+    cursor = conn.cursor()
+    query = 'SELECT  FROM blog WHERE username = %s ORDER BY ts DESC'
     return render_template("A_DFollow.html")
 
 #---------------------------------------------------
@@ -131,8 +134,12 @@ def registerAuth():
     return render_template("register.html", error=error)
 
 
-#--------------------------------------------
-#SETTIG UP FRIEND GROUPS AND ADDING THEM, COULD BE MADE TO LOOK NICER LATER
+#--------------------------------------------# 13 ----------------------------------------------
+#SETTIG UP FRIEND GROUPS
+
+#This is used to create a FriendGroup, it takes the value inputed into the form, and adding them into the SQL
+#If the GroupName is already in the database then it returns an error message
+#Decriptions are allowed to be the same as they are not Primary Keys
 @app.route("/friendGroup", methods=["POST"])
 def friendGroup():
     if request.form:
@@ -148,14 +155,16 @@ def friendGroup():
                 cursor.execute(query, (username, username,groupName))
 
         except pymysql.err.IntegrityError:
-            error = "Error try again"
+            error = "There already is a FriendGroup with that name"
             return render_template('createFriendGroup.html', error=error)    
 
         return redirect(url_for("home"))
 
-    error = "An error has occurred. Please try again."
-    return render_template("register.html", error=error)
 
+#--------------------------------------------# 14 ----------------------------------------------
+#Adding a Friend to a to FriendGroup takes a form, and checks if the user is in a group with the specified groupName
+#It then checks if the Friend is an account, if both coniditons are met it adds it the group. 
+#However, if there are duplicate entries then it tells you 
 @app.route("/addToFriendGroup", methods=["POST"])
 def addTofriendGroup():
     if request.form:
@@ -164,29 +173,31 @@ def addTofriendGroup():
         username = session["username"]
         friend = requestData["friend"]
         with connection.cursor() as cursor:
-            checkinGroupquery = "SELECT * FROM belongto WHERE member_username=%s and groupName=%s"
+            checkinGroupquery = "SELECT * FROM belongto WHERE owner_username=%s and groupName=%s"
             cursor.execute(checkinGroupquery, (username, groupName))
             checkinGroupquery = cursor.fetchone()
             checkifAccount = "SELECT * FROM person WHERE username=%s"
             cursor.execute(checkifAccount, (friend))
             checkifAccount = cursor.fetchone()
-            if checkifAccount and checkinGroupquery:
+            checkifFriendinGroup = "SELECT * FROM belongto WHERE member_username=%s and groupName=%s"
+            cursor.execute(checkifFriendinGroup, (friend, groupName))
+            checkifFriendinGroup = cursor.fetchone()
+            if checkifFriendinGroup:
+                message = "This Friend is already in this Group"
+                return render_template("addToFriendGroup.html", message = message)
+            elif checkifAccount and checkinGroupquery:
                 query = "INSERT INTO belongto VALUES (%s, %s, %s)"
                 query2 = "SELECT owner_username FROM belongto WHERE groupName=%s AND member_username=%s"
                 cursor.execute(query2, (groupName, username) )
                 groupOwner = cursor.fetchone()["owner_username"]
                 cursor.execute(query, (friend, groupOwner, groupName))
             else: 
-                message = "Either you are not in this group, the group does not exist or the friends account can't be found"
+                message = "Either you are not the owner of this group or the friends account can't be found"
                 return render_template("addToFriendGroup.html", message = message)
-        return redirect(url_for("home"))
-
-    error = "An error has occurred. Please try again."
-    return render_template("register.html", error=error)
+        message = friend + " added to FriendGroup: " +  groupName
+        return render_template("addToFriendGroup.html", message = message)
 #---------------------------------------
 #FOLLOW ACCEPTING AND REJECTING
-
-
 #This method proccesses the form and validates any query for sending a follow request
 @app.route("/sendFollow", methods=["POST"])
 @login_required
@@ -250,7 +261,7 @@ def A_DFollow():
 
 #------------------------------------------------
 #UPLOADING IMAGES
-
+#Puts the photo in the correct position depending on who its shared to (FriendGroups) or who the person is followed by
 @app.route("/uploadImage", methods=["POST"])
 @login_required
 def upload_image():
@@ -289,9 +300,6 @@ def upload_image():
                 else:
                     message = "Either group does not exist or you are not a member of this group"
                     return render_template("upload.html", message=message)
-                    
-            
-            
     else:
         message = "Failed to upload image."
         return render_template("upload.html", message=message)

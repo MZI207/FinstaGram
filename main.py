@@ -81,9 +81,12 @@ def follow():
 @app.route("/A_DFollow", methods=["GET"])
 def A_Dfollow():
     user = session["username"]
-    cursor = conn.cursor()
-    query = 'SELECT  FROM blog WHERE username = %s ORDER BY ts DESC'
-    return render_template("A_DFollow.html")
+    cursor = connection.cursor()
+    query = 'SELECT username_follower FROM follow WHERE username_followed = %s AND followstatus = 0'
+    cursor.execute(query, (user))
+    data = cursor.fetchall()
+    cursor.close()
+    return render_template("A_DFollow.html", username = data)
 
 #---------------------------------------------------
 #LOGIN INFO
@@ -209,11 +212,11 @@ def sendFollow():
         try:
             with connection.cursor() as cursor:
                 query = "SELECT * FROM Follow WHERE username_followed=%s AND username_follower=%s"
-                cursor.execute(query, (follower, followed))
+                cursor.execute(query, (followed, follower))
                 followExist = cursor.fetchall()
                 if followExist:
                     message = "There is an active request for %s" % (followed)
-                    return render_template("follow.html", message=message)
+                    return render_template("sendFollow.html", message=message)
                 checkifAccount = "SELECT * FROM person WHERE username=%s"
                 cursor.execute(checkifAccount, (followed))
                 checkifAccount = cursor.fetchone()
@@ -222,42 +225,38 @@ def sendFollow():
                     cursor.execute(query, (followed, follower))
                 else:
                     message = "%s does not exist" % (followed)
-                    return render_template("follow.html", message=message)
+                    return render_template("sendFollow.html", message=message)
         except pymysql.err.IntegrityError:
             message = "%s does not exist." % (followed)
             return render_template("follow.html", message=message)
         return redirect(url_for("home"))
 
 #This method proccesses the form and validates any query for sending a follow request
+#It checks if the decision was accept or decline and if it was accepts it updates the Table setting the followstatus to 1
+#If it was false it deletes it from the Table, and then shows all the other follow-request available.
 @app.route("/A_DFollow", methods=["POST"])
 @login_required
 def A_DFollow():
     if request.form:
         requestData = request.form
-        followed = requestData["person"]
-        follower = session["username"]
-        try:
-            with connection.cursor() as cursor:
-                query = "SELECT * FROM Follow WHERE username_followed=%s AND username_follower=%s"
-                cursor.execute(query, (follower, followed))
-                followExist = cursor.fetchall()
-                if followExist:
-                    message = "There is an active request for %s" % (followed)
-                    return render_template("follow.html", message=message)
-                checkifAccount = "SELECT * FROM person WHERE username=%s"
-                cursor.execute(checkifAccount, (followed))
-                checkifAccount = cursor.fetchone()
-                if checkifAccount:
-                    query = "INSERT INTO Follow (username_followed, username_follower, followstatus) VALUES (%s, %s, 0)"
-                    cursor.execute(query, (followed, follower))
-                else:
-                    message = "%s does not exist" % (followed)
-                    return render_template("follow.html", message=message)
-        except pymysql.err.IntegrityError:
-            message = "%s does not exist." % (followed)
-            return render_template("follow.html", message=message)
-        return redirect(url_for("home"))
-
+        user = session["username"]
+        cursor = connection.cursor()
+        
+        follower = requestData["follower"]
+        decision = requestData["A_D"]
+        if decision == "Accept":
+            message = follower + " now follows you!"
+            updateQuery = "UPDATE follow SET followstatus = 1 WHERE username_follower=%s AND username_followed=%s"
+            cursor.execute(updateQuery, (follower, user))
+        else:
+            message = "You declined " + follower + " request."
+            updateQuery = "DELETE FROM follow WHERE username_followed=%s AND username_follower=%s"
+            cursor.execute(updateQuery, (user, follower))
+        query = 'SELECT username_follower FROM follow WHERE username_followed = %s AND followstatus = 0'
+        cursor.execute(query, (user))
+        data = cursor.fetchall()
+        cursor.close()
+        return render_template("A_DFollow.html", message=message, username = data)
 
 #------------------------------------------------
 #UPLOADING IMAGES

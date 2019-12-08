@@ -3,7 +3,7 @@
         <title>Add to Friend Group</title>
     </head>
     <body>
-        <h1>Create a Group</h1>
+        <h1>Add a Friend to a Group</h1>
         <div>
             <form action="/addToFriendGroup" method="post">
                 <input type="text" name="groupName" placeholder="Group Name" required/>
@@ -17,5 +17,7 @@
         {% if message %}
             {{ message }}
         {% endif %}
+        <br/>
+        <a href="/">Go back</a>
     </body>
 </html>

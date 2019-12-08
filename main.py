@@ -199,9 +199,11 @@ def addTofriendGroup():
                 return render_template("addToFriendGroup.html", message = message)
         message = friend + " added to FriendGroup: " +  groupName
         return render_template("addToFriendGroup.html", message = message)
-#---------------------------------------
+#--------------------------------------- #4 --------------------------------
 #FOLLOW ACCEPTING AND REJECTING
 #This method proccesses the form and validates any query for sending a follow request
+#Checks if the person is a user and checks if there is an active request, where an error would be given
+#Otherwise it sends a follow request where it is set the follow status to zero as it is not yet accepted
 @app.route("/sendFollow", methods=["POST"])
 @login_required
 def sendFollow():
@@ -258,7 +260,7 @@ def A_DFollow():
         cursor.close()
         return render_template("A_DFollow.html", message=message, username = data)
 
-#------------------------------------------------
+#------------------------------------------------ Upload
 #UPLOADING IMAGES
 #Puts the photo in the correct position depending on who its shared to (FriendGroups) or who the person is followed by
 @app.route("/uploadImage", methods=["POST"])

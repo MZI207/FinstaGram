@@ -119,7 +119,7 @@ def loginAuth():
     if request.form:
         requestData = request.form
         username = requestData["username"]
-        plaintextPasword = requestData["password"]
+        plaintextPasword = requestData["password"] + "salt"
         hashedPassword = hashlib.sha256(plaintextPasword.encode("utf-8")).hexdigest()
 
         with connection.cursor() as cursor:
@@ -141,7 +141,7 @@ def registerAuth():
     if request.form:
         requestData = request.form
         username = requestData["username"]
-        plaintextPasword = requestData["password"]
+        plaintextPasword = requestData["password"] + "salt"
         hashedPassword = hashlib.sha256(plaintextPasword.encode("utf-8")).hexdigest()
         firstName = requestData["fname"]
         lastName = requestData["lname"]

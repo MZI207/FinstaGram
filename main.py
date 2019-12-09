@@ -85,8 +85,25 @@ def A_Dfollow():
     query = 'SELECT username_follower FROM follow WHERE username_followed = %s AND followstatus = 0'
     cursor.execute(query, (user))
     data = cursor.fetchall()
-    cursor.close()
     return render_template("A_DFollow.html", username = data)
+@app.route("/")
+#------------------------------------------------ Viewing Photos
+#VIEWING PHOTOS
+#Once the link is selected it finds all the photos the user can see as well as showing its details
+#such as ID, who posted, the image itself, the posting date, and caption
+#It also will has a link to show the Tags and Likes in the photo.
+@app.route("/viewPhotos", methods=["GET"])
+def viewPhotos():
+    user = session["username"]
+    cursor = connection.cursor()
+    query = "SELECT DISTINCT photoID, photoPoster,filepath, postingdate, caption FROM photo WHERE photoPoster IN (SELECT username_followed FROM follow WHERE username_follower=%s AND followstatus = 1) OR photoID IN ( SELECT photoID FROM sharedwith NATURAL JOIN belongto WHERE member_username=%s)"
+    """
+    Find a way to show to likes and tags in a photo
+    query1 = "SELECT
+    """
+    cursor.execute(query, (user,user))
+    data = cursor.fetchall()
+    return render_template("viewPhotos.html", data = data)
 
 #---------------------------------------------------
 #LOGIN INFO

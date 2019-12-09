@@ -8,7 +8,7 @@ import time
 
 app = Flask(__name__)
 app.secret_key = "super secret key"
-IMAGES_DIR = os.path.join(os.getcwd(), "images")
+IMAGES_DIR = os.path.join(os.getcwd(), "static")
 
 connection = pymysql.connect(host="localhost",
                              user="root",
@@ -43,6 +43,7 @@ def home():
 def upload():
     return render_template("upload.html")
 
+
 @app.route("/images", methods=["GET"])
 @login_required
 def images():
@@ -57,6 +58,7 @@ def image(image_name):
     image_location = os.path.join(IMAGES_DIR, image_name)
     if os.path.isfile(image_location):
         return send_file(image_location, mimetype="image/jpg")
+
 
 @app.route("/login", methods=["GET"])
 def login():
@@ -96,14 +98,19 @@ def A_Dfollow():
 def viewPhotos():
     user = session["username"]
     cursor = connection.cursor()
-    query = "SELECT DISTINCT photoID, photoPoster,filepath, postingdate, caption FROM photo WHERE photoPoster IN (SELECT username_followed FROM follow WHERE username_follower=%s AND followstatus = 1) OR photoID IN ( SELECT photoID FROM sharedwith NATURAL JOIN belongto WHERE member_username=%s)"
-    """
-    Find a way to show to likes and tags in a photo
-    query1 = "SELECT
-    """
+    query = "SELECT DISTINCT photoID, photoPoster,filepath, postingdate, caption FROM photo WHERE photoPoster IN (SELECT username_followed FROM follow WHERE username_follower=%s AND followstatus = 1) OR photoID IN ( SELECT photoID FROM sharedwith NATURAL JOIN belongto WHERE member_username=%s) ORDER BY postingdate DESC"
+    #Gets you tag values
+    query1 = "SELECT photoID, username FROM tagged WHERE tagstatus = 1 AND photoID IN ( SELECT DISTINCT photoID FROM photo WHERE photoPoster IN (SELECT username_followed FROM follow WHERE username_follower=%s AND followstatus = 1) OR photoID IN (SELECT photoID FROM sharedwith NATURAL JOIN belongto WHERE member_username=%s) )"
+    #Gets you like values
+    query2 = "SELECT photoID, username, liketime, rating FROM likes WHERE photoID IN ( SELECT DISTINCT photoID FROM photo WHERE photoPoster IN (SELECT username_followed FROM follow WHERE username_follower=%s AND followstatus = 1) OR photoID IN (SELECT photoID FROM sharedwith NATURAL JOIN belongto WHERE member_username=%s) )"
     cursor.execute(query, (user,user))
     data = cursor.fetchall()
-    return render_template("viewPhotos.html", data = data)
+    cursor.execute(query1, (user, user))
+    tags = cursor.fetchall()
+    cursor.execute(query2, (user,user))
+    likes = cursor.fetchall()
+    return render_template("viewPhotos.html", data = data, likes = likes, tags = tags)
+
 
 #---------------------------------------------------
 #LOGIN INFO
@@ -304,7 +311,10 @@ def upload_image():
             query1 = "INSERT INTO sharedwith (groupOwner, groupName, photoID) VALUES (%s, %s, %s)"
             query2 = "SELECT owner_username FROM belongto WHERE groupName=%s AND member_username=%s"
             with connection.cursor() as cursor:
-                cursor.execute(query2, (groupName, username) )
+                rowCount = cursor.execute(query2, (groupName, username) )
+                if rowCount == 0:
+                    message = "Please input a group name if you wish to share with a Friend Group"
+                    return render_template("upload.html", message=message)
                 groupOwner = cursor.fetchone()["owner_username"]
                 if groupOwner:
                     query3 = "SELECT photoID FROM photo WHERE photoPoster=%s AND filepath =%s AND postingdate=%s"
@@ -329,6 +339,6 @@ def logout():
     return redirect("/")
 
 if __name__ == "__main__":
-    if not os.path.isdir("images"):
+    if not os.path.isdir("static"):
         os.mkdir(IMAGES_DIR)
     app.run()

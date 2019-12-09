@@ -1,0 +1,34 @@
+<html>
+    <head>
+        <title>View Photos</title>
+    </head>
+    <body>
+        <h1>View Photos</h1>
+        
+        <style type="text/css">
+            table, th, td{
+                border: 1px solid black;
+            }
+        </style>
+
+
+        <table>
+            <th>Username</th>
+            <th>Photo</th>
+            <th>Caption</th>
+            <th> Posting Date</th>
+        {% for line in data %}
+            <tr>
+                <td>{{line.photoPoster}}</td>
+                <td>{{line.photoID}}</td>
+                <td><img src="images/{{line.filepath}}"></td>
+                <td>{{line.caption}}</td>
+                <td>{{line.postingdate}}</td>
+                <td>View Likes</td>
+            </tr>
+        {% endfor %}
+        </table>
+
+        <br>
+    </body>
+</html>

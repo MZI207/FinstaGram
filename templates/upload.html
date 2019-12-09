@@ -6,7 +6,7 @@
         <h1>Upload an Image!</h1>
         <div>
             <form action="/uploadImage" method="post" enctype="multipart/form-data">
-                <input type="file" name="imageToUpload" accept="image/*">
+                <input type="file" name="imageToUpload" accept="image/*" required>
                 <br/>
                 <input type="text" name="caption" placeholder="Caption" required/>
                 <br/>

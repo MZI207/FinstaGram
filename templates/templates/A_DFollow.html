@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <title>Accept or Decline Follows</title>
+    </head>
+    <body>
+        <h1>Accept or Decline a Follow!</h1>
+        
+            <style type="text/css">
+                table, th, td{
+                    border: 1px solid black;
+                }
+            </style>
+            {% if message %}
+            {{ message }}
+            {% endif %}
+            <br/>
+            Follow Requests
+
+            <table>
+                <th>Usernames</th>
+
+            {% for line in username %}
+                <tr>
+                    <form action="/A_DFollow" method ="post" enctype="multipart/form-data">
+                        <input type="hidden" name="follower" value={{line.username_follower}}>
+                        <td>{{line.username_follower}}</td>
+                        <td><input type = "radio" name="A_D" value="Accept" checked required> Accept </td>
+                        <td><input type = "radio" name="A_D" value="Decline" > Decline </td>
+                        <td><input type="submit" value = "Submit"> </td>
+                    </form>
+                </tr>
+            {% endfor %}
+            </table>
+            
+        <br/>
+        <a href="/home">Go back</a>
+    </body>
+</html>

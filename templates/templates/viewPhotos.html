@@ -1,0 +1,54 @@
+<html>
+    <head>
+        <title>View Photos</title>
+    </head>
+    <body>
+        <h1>View Photos</h1>
+        
+        <style type="text/css">
+            table, th, td{
+                border: 1px solid black;
+            }
+        </style>
+
+
+        <table>
+            <th>Username</th>
+            <th>PhotoID</th>
+            <th> Photo </th>
+            <th> Caption </th>
+            <th> Posting Date</th>
+            <th> Likes </th>
+            <th> Tags </th>
+        {% for line in data %}
+            <tr>
+                <td>{{line.photoPoster}}</td>
+                <td>{{line.photoID}}</td>
+                <td><img src="static/{{line.filepath}}"></td>
+                <td>{{line.caption}}</td>
+                <td>{{line.postingdate}}</td>
+                <td>
+                {% for line1 in likes %}
+                {% if line.photoID == line1.photoID %}
+                    <br>
+                    User: {{line1.username}} rated: {{line1.rating}}
+                {% endif %}
+
+                {% endfor %}
+                </td>
+                <td>                
+                {% for line2 in tags %}
+                    {% if line.photoID == line2.photoID %}
+                    <br>
+                    {{line2.username}}
+                    {% endif %}
+                {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </table>
+
+        <br>
+        <a href="/">Go back</a>
+    </body>
+</html>
